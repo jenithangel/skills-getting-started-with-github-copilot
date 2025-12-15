@@ -1,3 +1,4 @@
+
 """
 High School Management System API
 
@@ -18,6 +19,23 @@ app = FastAPI(title="Mergington High School API",
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
+# Unregister endpoint and model (must be after app and activities)
+from pydantic import BaseModel
+
+class UnregisterRequest(BaseModel):
+    email: str
+
+@app.post("/api/activities/{activity_id}/unregister")
+async def unregister_participant(activity_id: str, req: UnregisterRequest):
+    # Find activity by id (name)
+    if activity_id not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    activity = activities[activity_id]
+    email = req.email
+    if email not in activity["participants"]:
+        raise HTTPException(status_code=400, detail="Participant not found in this activity")
+    activity["participants"].remove(email)
+    return {"success": True, "message": f"Removed {email} from {activity_id}"}
 
 # In-memory activity database
 activities = {
